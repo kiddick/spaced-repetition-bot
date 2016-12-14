@@ -1,17 +1,18 @@
 from unittest import TestCase, main
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from playhouse.test_utils import test_database
 from peewee import *
 
 import models
+import bot
 from models import Task, TaskStatus
+from utils import encode_callback_data, decode_callback_data, \
+    render_template, format_task_content, decode_answer_option
+from bot import callback_handler, remind_task_to_user, \
+    AnswerOption, MessageTemplate
+
 
 test_db = SqliteDatabase(':memory:')
-
-
-def create_task(**kwargs):
-    with test_database(test_db, (Task,)):
-        return Task.create(**kwargs)
 
 
 class TestModelCreation(TestCase):
@@ -19,15 +20,17 @@ class TestModelCreation(TestCase):
     @patch.object(models, 'time_intervals', [5, 10])
     @patch('models.get_current_timestamp')
     def test_task_default_creation(self, current_date):
-        current_date.return_value = 100
-        task = create_task()
-        self.assertEqual(task.notification_date, current_date() + 5)
-        self.assertEqual(task.status, TaskStatus.ACTIVE)
+        with test_database(test_db, (Task,)):
+            current_date.return_value = 100
+            task = Task.create()
+            self.assertEqual(task.notification_date, current_date() + 5)
+            self.assertEqual(task.status, TaskStatus.ACTIVE)
 
     def test_regular_task_creation(self):
-        task = create_task(content='Hi', chat_id=52)
-        self.assertEqual(task.content, 'Hi')
-        self.assertEqual(task.chat_id, 52)
+        with test_database(test_db, (Task,)):
+            task = Task.create(content='Hi', chat_id=52)
+            self.assertEqual(task.content, 'Hi')
+            self.assertEqual(task.chat_id, 52)
 
 
 class TestUpdateNotificationDate(TestCase):
@@ -41,67 +44,72 @@ class TestUpdateNotificationDate(TestCase):
 
     @patch.object(models, 'time_intervals', [1, 2, 3])
     def test_user_forgot_a_term(self):
-        intervals = models.time_intervals
+        with test_database(test_db, (Task,)):
+            intervals = models.time_intervals
 
-        task = create_task()
-        delta = intervals[0]
-        self.assertEqual(task.notification_date, self.current_date + delta)
+            task = Task.create()
+            delta = intervals[0]
+            self.assertEqual(task.notification_date, self.current_date + delta)
 
-        time_gap = task.update_notification_date(remember=False)
-        new_date = task.notification_date
+            time_gap = task.update_notification_date(remember=False)
+            new_date = task.notification_date
 
-        self.assertEqual(new_date, self.current_date + intervals[0])
-        self.assertEqual(time_gap, intervals[0])
-        self.assertEqual(task.status, TaskStatus.ACTIVE)
+            self.assertEqual(new_date, self.current_date + intervals[0])
+            self.assertEqual(time_gap, intervals[0])
+            self.assertEqual(task.status, TaskStatus.ACTIVE)
 
-        time_gap = task.update_notification_date(remember=False)
-        self.assertEqual(time_gap, intervals[0])
-        self.assertEqual(task.status, TaskStatus.ACTIVE)
+            time_gap = task.update_notification_date(remember=False)
+            self.assertEqual(time_gap, intervals[0])
+            self.assertEqual(task.status, TaskStatus.ACTIVE)
 
     @patch.object(models, 'time_intervals', [1, 2, 3])
     def test_user_remember_a_term(self):
-        intervals = models.time_intervals
+        with test_database(test_db, (Task,)):
+            intervals = models.time_intervals
 
-        task = create_task()
+            task = Task.create()
 
-        task.update_notification_date(remember=True)
-        new_date = task.notification_date
-        self.assertEqual(new_date, self.current_date + intervals[1])
-        self.assertEqual(task.status, TaskStatus.ACTIVE)
+            task.update_notification_date(remember=True)
+            new_date = task.notification_date
+            self.assertEqual(new_date, self.current_date + intervals[1])
+            self.assertEqual(task.status, TaskStatus.ACTIVE)
 
-        task.update_notification_date(remember=True)
-        new_date = task.notification_date
-        self.assertEqual(new_date, self.current_date + intervals[2])
-        self.assertEqual(task.status, TaskStatus.ACTIVE)
+            task.update_notification_date(remember=True)
+            new_date = task.notification_date
+            self.assertEqual(new_date, self.current_date + intervals[2])
+            self.assertEqual(task.status, TaskStatus.ACTIVE)
 
     @patch.object(models, 'time_intervals', [2, 3])
     def test_maximum_intervals_reached(self):
-        task = create_task()
-        task.update_notification_date(remember=True)
-        time_gap = task.update_notification_date(remember=True)
-        self.assertFalse(time_gap)
-        self.assertEqual(task.status, TaskStatus.DONE)
+        with test_database(test_db, (Task,)):
+            task = Task.create()
+            task.update_notification_date(remember=True)
+            time_gap = task.update_notification_date(remember=True)
+            self.assertFalse(time_gap)
+            self.assertEqual(task.status, TaskStatus.DONE)
 
 
-class TestCommonOperations(TestCase):
+class TestModelsCommonOperations(TestCase):
 
     def test_change_status(self):
-        task = create_task()
-        task.set_status(TaskStatus.DONE)
-        self.assertEqual(task.status, TaskStatus.DONE)
-        task.set_status(TaskStatus.ACTIVE)
-        self.assertEqual(task.status, TaskStatus.ACTIVE)
+        with test_database(test_db, (Task,)):
+            task = Task.create()
+            task.set_status(TaskStatus.DONE)
+            self.assertEqual(task.status, TaskStatus.DONE)
+            task.set_status(TaskStatus.ACTIVE)
+            self.assertEqual(task.status, TaskStatus.ACTIVE)
 
     def test_forgot_counter(self):
-        task = create_task()
-        self.assertEqual(task.forgot_counter, 0)
-        task.update_notification_date(remember=True)
-        self.assertEqual(task.forgot_counter, 0)
-        task.update_notification_date(remember=False)
-        task.update_notification_date(remember=False)
-        self.assertEqual(task.forgot_counter, 2)
-        task.update_notification_date(remember=True)
-        self.assertEqual(task.forgot_counter, 2)
+        with test_database(test_db, (Task,)):
+            task = Task.create()
+            self.assertEqual(task.forgot_counter, 0)
+            task.update_notification_date(remember=True)
+            self.assertEqual(task.forgot_counter, 0)
+            task.update_notification_date(remember=False)
+            task.update_notification_date(remember=False)
+            self.assertEqual(task.forgot_counter, 2)
+            task.update_notification_date(remember=True)
+            self.assertEqual(task.forgot_counter, 2)
 
     def test_find_task(self):
         with test_database(test_db, (Task,)):
@@ -133,6 +141,145 @@ class TestCommonOperations(TestCase):
             self.assertEqual(len(tasks), 2)
             self.assertEqual(tasks[0].status, TaskStatus.ACTIVE)
             self.assertEqual(tasks[1].status, TaskStatus.ACTIVE)
+
+
+class TestBotCommon(TestCase):
+
+    def test_encode_callback(self):
+        data = encode_callback_data(1, 'text')
+        self.assertEqual(data, '1@text')
+
+        data = encode_callback_data(2, '@ text')
+        self.assertEqual(data, '2@@ text')
+
+        data = encode_callback_data(13, '1')
+        self.assertEqual(data, '13@1')
+
+    def test_decode_callback(self):
+        data = encode_callback_data(1, 'message')
+        self.assertEqual(decode_callback_data(data), 'message')
+
+        data = encode_callback_data(12, '@text@')
+        self.assertEqual(decode_callback_data(data), '@text@')
+
+        data = encode_callback_data(0, ' one two ')
+        self.assertEqual(decode_callback_data(data), ' one two ')
+
+    def test_decode_answer_option(self):
+        data = encode_callback_data(1, 'message')
+        self.assertEqual(decode_answer_option(data), '1')
+
+        data = encode_callback_data(12, '@12@')
+        self.assertEqual(decode_answer_option(data), '12')
+
+    def test_render_template(self):
+        text = render_template('The {} who knocks', ['one'])
+        self.assertEqual(text, 'The one who knocks')
+
+        text = render_template('{} {}', [2, 'args'])
+        self.assertEqual(text, '2 args')
+
+        text = render_template('{} text', ['bold'], bold=True)
+        self.assertEqual(text, '*bold* text')
+
+        self.assertEqual(render_template('Pure text'), 'Pure text')
+
+        with self.assertRaises(IndexError):
+            render_template('{} {} {}', [1])
+
+        with self.assertRaises(IndexError):
+            render_template('{}', [1, 2, 3])
+
+    def test_format_content(self):
+        content = ' Strip '
+        self.assertEqual(format_task_content(content), 'Strip')
+
+        content = 'upper'
+        self.assertEqual(format_task_content(content), 'Upper')
+
+        self.assertEqual(format_task_content(' a '), format_task_content('A'))
+
+
+class TestBot(TestCase):
+
+    def setUp(self):
+        message = MagicMock(chat_id=777, message_id=111)
+        callback_query = MagicMock(message=message, data='')
+        self.update = MagicMock(callback_query=callback_query)
+        self.bot = MagicMock()
+        patcher = patch('bot.render_template')
+        self.addCleanup(patcher.stop)
+        self.mock_render = patcher.start()
+
+    def _set_callback_data(self, answer_option, text):
+        data = encode_callback_data(answer_option, text)
+        self.update.callback_query.data = data
+
+    def assertRendered(self, message_template):
+        self.assertIn(message_template, self.mock_render.call_args[0])
+
+    def test_add_task(self):
+        with test_database(test_db, (Task,)):
+            self._set_callback_data(AnswerOption.ADD_TASK, 'python')
+
+            callback_handler(self.bot, self.update)
+
+            self.assertEqual(Task.select(), 1)
+            task = Task.find_task(777, 'python')
+            self.assertIsNotNone(task)
+            self.assertEqual(task.status, TaskStatus.ACTIVE)
+            self.assertRendered(MessageTemplate.ADD_CONFIRMATION)
+
+    def test_remove_task(self):
+        with test_database(test_db, (Task,)):
+            Task.create(chat_id=777, content='python')
+            self._set_callback_data(AnswerOption.REMOVE, 'python')
+
+            callback_handler(self.bot, self.update)
+            task = Task.get()
+            self.assertEqual(task.status, TaskStatus.DONE)
+            self.assertRendered(MessageTemplate.REGULAR_REPLY)
+
+    @patch.object(models.Task, 'update_notification_date')
+    def test_user_remember_task(self, update_date):
+        with test_database(test_db, (Task,)):
+            self._set_callback_data(AnswerOption.ADD_TASK, 'stuff')
+            callback_handler(self.bot, self.update)
+
+            self._set_callback_data(AnswerOption.REMEMBER, 'stuff')
+            callback_handler(self.bot, self.update)
+
+            update_date.assert_called_with(remember=True)
+            self.assertRendered(MessageTemplate.REMEMBER)
+
+    @patch.object(models.Task, 'update_notification_date')
+    def test_user_forgot_task(self, update_date):
+        with test_database(test_db, (Task,)):
+            self._set_callback_data(AnswerOption.ADD_TASK, 'thing')
+            callback_handler(self.bot, self.update)
+
+            self._set_callback_data(AnswerOption.FORGOT, 'thing')
+            callback_handler(self.bot, self.update)
+
+            update_date.assert_called_with(remember=False)
+            self.assertRendered(MessageTemplate.FORGOT)
+
+    def test_cancel_task_creation(self):
+        with test_database(test_db, (Task,)):
+            self._set_callback_data(AnswerOption.CANCEL, 'text')
+            callback_handler(self.bot, self.update)
+
+            self.assertEqual(len(Task.select()), 0)
+            self.assertRendered(MessageTemplate.REGULAR_REPLY)
+
+    def test_task_reminder(self):
+        with test_database(test_db, (Task,)):
+            task = Task.create(chat_id=777, content='Content')
+            remind_task_to_user(self.bot, task)
+
+            self.assertEqual(task.status, TaskStatus.WAITING_ANSWER)
+            self.assertRendered(MessageTemplate.NOTIFICATION_QUESTION)
+    # TODO: add existing task
 
 if __name__ == '__main__':
     main()
