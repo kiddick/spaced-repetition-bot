@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from peewee import *
 
 DATABASE_NAME = 'tasks.db'
-time_intervals = [1, 60, 120, 240]
+time_intervals = [1, 3, 5, 60, 120, 240]
 
 db = SqliteDatabase(DATABASE_NAME)
 
@@ -91,6 +91,15 @@ class Task(BaseModel):
             (Task.notification_date <= get_current_timestamp()) &
             (Task.status == TaskStatus.ACTIVE))
         return tasks
+
+    @classmethod
+    def get_users_tasks(self, chat_id):
+        return Task.select().where(Task.chat_id == chat_id)
+
+    def increase_forgot_counter(self, value=1):
+        self.forgot_counter += value
+        with db.transaction():
+            self.save()
 
     def __repr__(self):
         return 'Task<{}: {}>'.format(self.chat_id, self.content)

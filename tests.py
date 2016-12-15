@@ -111,6 +111,14 @@ class TestModelsCommonOperations(TestCase):
             task.update_notification_date(remember=True)
             self.assertEqual(task.forgot_counter, 2)
 
+    def test_inc_forgot_counter(self):
+        with test_database(test_db, (Task,)):
+            task = Task.create()
+            task.increase_forgot_counter()
+            self.assertEqual(task.forgot_counter, 1)
+            task.increase_forgot_counter(20)
+            self.assertEqual(task.forgot_counter, 21)
+
     def test_find_task(self):
         with test_database(test_db, (Task,)):
             Task.create(content='abc', chat_id=1)
@@ -141,6 +149,16 @@ class TestModelsCommonOperations(TestCase):
             self.assertEqual(len(tasks), 2)
             self.assertEqual(tasks[0].status, TaskStatus.ACTIVE)
             self.assertEqual(tasks[1].status, TaskStatus.ACTIVE)
+
+    def test_get_users_tasks(self):
+        with test_database(test_db, (Task,)):
+            Task.create(chat_id=1, content='first')
+            Task.create(chat_id=7)
+            Task.create(chat_id=7)
+
+            self.assertEqual(len(Task.get_users_tasks(1)), 1)
+            self.assertEqual(Task.get_users_tasks(1)[0].content, 'first')
+            self.assertEqual(len(Task.get_users_tasks(7)), 2)
 
 
 class TestBotCommon(TestCase):
@@ -279,7 +297,16 @@ class TestBot(TestCase):
 
             self.assertEqual(task.status, TaskStatus.WAITING_ANSWER)
             self.assertRendered(MessageTemplate.NOTIFICATION_QUESTION)
-    # TODO: add existing task
+
+    def test_add_existing_task(self):
+        with test_database(test_db, (Task,)):
+            self._set_callback_data(AnswerOption.ADD_TASK, 'JS')
+            callback_handler(self.bot, self.update)
+            callback_handler(self.bot, self.update)
+
+            self.assertRendered(MessageTemplate.DUPLICATE)
+            self.assertEqual(len(Task.select()), 1)
+            self.assertEqual(Task.get().forgot_counter, 1)
 
 if __name__ == '__main__':
     main()
