@@ -53,10 +53,7 @@ def handle_text(bot, update):
     ]]
     markup = InlineKeyboardMarkup(keyboard)
 
-    text = render_template(
-        MessageTemplate.ADD_TASK,
-        [user_message],
-        bold=True)
+    text = render_template(MessageTemplate.ADD_TASK, user_message, bold=True)
 
     bot.send_message(
         chat_id=update.message.chat_id,
@@ -88,9 +85,7 @@ def handle_task_creation_dialog(bot, update):
                 Task.create(content=content, chat_id=chat_id)
 
             reply_text = render_template(
-                MessageTemplate.ADD_CONFIRMATION,
-                [content],
-                bold=True)
+                MessageTemplate.ADD_CONFIRMATION, content, bold=True)
         else:
             reply_text = render_template(MessageTemplate.DUPLICATE, content)
             Task.find_task(chat_id, content).increase_forgot_counter()
@@ -123,13 +118,10 @@ def handle_quiz_dialog(bot, update):
 
         if time_interval:
             reply_text = render_template(
-                MessageTemplate.REMEMBER,
-                [time_interval])
+                MessageTemplate.REMEMBER, time_interval)
         else:
             reply_text = render_template(
-                MessageTemplate.TERM_HAS_LEARNED,
-                [content],
-                bold=True)
+                MessageTemplate.TERM_HAS_LEARNED, content, bold=True)
 
     # user forgot a term
     elif answer == AnswerOption.FORGOT:
@@ -180,9 +172,7 @@ def remind_task_to_user(bot, task):
 
     markup = InlineKeyboardMarkup(keyboard)
     text = render_template(
-        MessageTemplate.NOTIFICATION_QUESTION,
-        [task.content],
-        bold=True)
+        MessageTemplate.NOTIFICATION_QUESTION, task.content, bold=True)
 
     task.set_status(TaskStatus.WAITING_ANSWER)
     bot.send_message(

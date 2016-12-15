@@ -191,22 +191,22 @@ class TestBotCommon(TestCase):
         self.assertEqual(decode_answer_option(data), '12')
 
     def test_render_template(self):
-        text = render_template('The {} who knocks', ['one'])
+        text = render_template('The {} who knocks', 'one')
         self.assertEqual(text, 'The one who knocks')
 
-        text = render_template('{} {}', [2, 'args'])
+        text = render_template('{} {}', 2, 'args')
         self.assertEqual(text, '2 args')
 
-        text = render_template('{} text', ['bold'], bold=True)
+        text = render_template('{} text', 'bold', bold=True)
         self.assertEqual(text, '*bold* text')
 
         self.assertEqual(render_template('Pure text'), 'Pure text')
 
         with self.assertRaises(IndexError):
-            render_template('{} {} {}', [1])
+            render_template('{} {} {}', 1)
 
         with self.assertRaises(IndexError):
-            render_template('{}', [1, 2, 3])
+            render_template('{}', 1, 2, 3)
 
     def test_format_content(self):
         content = ' Strip '

@@ -13,7 +13,7 @@ def decode_answer_option(callback_data):
     return callback_data.split('@')[0]
 
 
-def render_template(template, args=[], bold=False):
+def render_template(template, *args, bold=False):
     if len(args) != template.count('{}'):
         raise IndexError('Number of arguments did not match with template')
 
