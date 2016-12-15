@@ -22,7 +22,7 @@ class TestModelCreation(TestCase):
     def test_task_default_creation(self, current_date):
         with test_database(test_db, (Task,)):
             current_date.return_value = 100
-            task = Task.create()
+            task = Task.create(chat_id=1, content='stuff')
             self.assertEqual(task.notification_date, current_date() + 5)
             self.assertEqual(task.status, TaskStatus.ACTIVE)
 
@@ -47,7 +47,7 @@ class TestUpdateNotificationDate(TestCase):
         with test_database(test_db, (Task,)):
             intervals = models.time_intervals
 
-            task = Task.create()
+            task = Task.create(chat_id=1, content='stuff')
             delta = intervals[0]
             self.assertEqual(task.notification_date, self.current_date + delta)
 
@@ -67,7 +67,7 @@ class TestUpdateNotificationDate(TestCase):
         with test_database(test_db, (Task,)):
             intervals = models.time_intervals
 
-            task = Task.create()
+            task = Task.create(chat_id=1, content='stuff')
 
             task.update_notification_date(remember=True)
             new_date = task.notification_date
@@ -82,7 +82,7 @@ class TestUpdateNotificationDate(TestCase):
     @patch.object(models, 'time_intervals', [2, 3])
     def test_maximum_intervals_reached(self):
         with test_database(test_db, (Task,)):
-            task = Task.create()
+            task = Task.create(chat_id=1, content='stuff')
             task.update_notification_date(remember=True)
             time_gap = task.update_notification_date(remember=True)
             self.assertFalse(time_gap)
@@ -93,7 +93,7 @@ class TestModelsCommonOperations(TestCase):
 
     def test_change_status(self):
         with test_database(test_db, (Task,)):
-            task = Task.create()
+            task = Task.create(chat_id=1, content='stuff')
             task.set_status(TaskStatus.DONE)
             self.assertEqual(task.status, TaskStatus.DONE)
             task.set_status(TaskStatus.ACTIVE)
@@ -101,7 +101,7 @@ class TestModelsCommonOperations(TestCase):
 
     def test_forgot_counter(self):
         with test_database(test_db, (Task,)):
-            task = Task.create()
+            task = Task.create(chat_id=1, content='stuff')
             self.assertEqual(task.forgot_counter, 0)
             task.update_notification_date(remember=True)
             self.assertEqual(task.forgot_counter, 0)
@@ -113,7 +113,7 @@ class TestModelsCommonOperations(TestCase):
 
     def test_inc_forgot_counter(self):
         with test_database(test_db, (Task,)):
-            task = Task.create()
+            task = Task.create(chat_id=1, content='stuff')
             task.increase_forgot_counter()
             self.assertEqual(task.forgot_counter, 1)
             task.increase_forgot_counter(20)
@@ -139,10 +139,11 @@ class TestModelsCommonOperations(TestCase):
         with test_database(test_db, (Task,)):
             self.assertEqual(Task.get_active_tasks(), [])
 
-            Task.create(status=TaskStatus.ACTIVE)
-            Task.create(status=TaskStatus.ACTIVE)
-            Task.create(status=TaskStatus.DONE)
-            Task.create(status=TaskStatus.WAITING_ANSWER)
+            Task.create(status=TaskStatus.ACTIVE, chat_id=1, content='1')
+            Task.create(status=TaskStatus.ACTIVE, chat_id=1, content='2')
+            Task.create(status=TaskStatus.DONE, chat_id=1, content='3')
+            Task.create(
+                status=TaskStatus.WAITING_ANSWER, chat_id=1, content='4')
             current_date.return_value = 999999
             tasks = Task.get_active_tasks()
 
@@ -153,8 +154,8 @@ class TestModelsCommonOperations(TestCase):
     def test_get_users_tasks(self):
         with test_database(test_db, (Task,)):
             Task.create(chat_id=1, content='first')
-            Task.create(chat_id=7)
-            Task.create(chat_id=7)
+            Task.create(chat_id=7, content='second')
+            Task.create(chat_id=7, content='third')
 
             self.assertEqual(len(Task.get_users_tasks(1)), 1)
             self.assertEqual(Task.get_users_tasks(1)[0].content, 'first')
@@ -307,6 +308,7 @@ class TestBot(TestCase):
             self.assertRendered(MessageTemplate.DUPLICATE)
             self.assertEqual(len(Task.select()), 1)
             self.assertEqual(Task.get().forgot_counter, 1)
+
 
 if __name__ == '__main__':
     main()

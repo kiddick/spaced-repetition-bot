@@ -13,7 +13,6 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, \
     MessageHandler, Filters
 
 from models import Task, TaskStatus, get_current_timestamp
-from models import db as database
 from utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option
 
@@ -39,7 +38,7 @@ class MessageTemplate(object):
     TERM_HAS_LEARNED = 'Awesome! Seems like you\'ve learned {}'
     REMEMBER = 'Good job! Next notification in {} sec'
     FORGOT = 'Notification counter was reset'
-    DUPLICATE = 'You\'re already learning {}'
+    DUPLICATE = 'You\'re already learning {}. Resetting notification counter'
     HELP = 'Just write me a term you want to remember'
 
 
@@ -81,14 +80,14 @@ def handle_task_creation_dialog(bot, update):
 
         user_tasks = (task.content for task in Task.get_users_tasks(chat_id))
         if content not in user_tasks:
-            with database.transaction():
-                Task.create(content=content, chat_id=chat_id)
+            Task.create(content=content, chat_id=chat_id)
 
             reply_text = render_template(
                 MessageTemplate.ADD_CONFIRMATION, content, bold=True)
         else:
             reply_text = render_template(MessageTemplate.DUPLICATE, content)
-            Task.find_task(chat_id, content).increase_forgot_counter()
+            Task.find_task(chat_id, content).update_notification_date(
+                remember=False)
 
     # cancel
     elif answer == AnswerOption.CANCEL:

@@ -104,6 +104,18 @@ class Task(BaseModel):
     def __repr__(self):
         return 'Task<{}: {}>'.format(self.chat_id, self.content)
 
+    @classmethod
+    def create(self, chat_id, content, **kwargs):
+        task = Task.find_task(chat_id, content)
+        if not task:
+            with db.transaction():
+                new_task = Task(chat_id=chat_id, content=content, **kwargs)
+                new_task.save()
+            return new_task
+        else:
+            task.update_notification_date(remember=False)
+            return task
+
 
 def create_tables():
     with db.transaction():
