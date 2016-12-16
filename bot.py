@@ -14,7 +14,8 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, \
 
 from models import Task, TaskStatus, get_current_timestamp
 from utils import encode_callback_data, decode_callback_data, \
-    render_template, format_task_content, decode_answer_option
+    render_template, format_task_content, decode_answer_option, \
+    timestamp_to_date
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,7 +31,7 @@ class AnswerOption(object):
 
 
 class MessageTemplate(object):
-    ADD_TASK = 'Do you want to save {}?'
+    ADD_TASK = 'Do you want to start learning {}?'
     NOTIFICATION_QUESTION = 'Do you remember the meaning of {}?'
     ADD_CONFIRMATION = 'You will receive reminder about {} soon'
     REGULAR_REPLY = 'As you wish'
@@ -38,7 +39,12 @@ class MessageTemplate(object):
     TERM_HAS_LEARNED = 'Awesome! Seems like you\'ve learned {}'
     REMEMBER = 'Good job! Next notification in {} sec'
     FORGOT = 'Notification counter was reset'
-    DUPLICATE = 'You\'re already learning {}. Resetting notification counter'
+    DUPLICATE_ACTIVE_TASK = (
+        'You\'re already learning {}. '
+        'I\'m resetting notification counter')
+    DUPLICATE_DONE_TASK = (
+        'First time you start learning {} at {}. Then you finished at {}. '
+        'I\'m resetting notification counter')
     HELP = 'Just write me a term you want to remember'
 
 
@@ -78,16 +84,22 @@ def handle_task_creation_dialog(bot, update):
         content = decode_callback_data(callback_data)
         chat_id = update.callback_query.message.chat_id
 
-        user_tasks = (task.content for task in Task.get_users_tasks(chat_id))
-        if content not in user_tasks:
-            Task.create(content=content, chat_id=chat_id)
+        task = Task.create(content=content, chat_id=chat_id)
 
+        if task.forgot_counter == 0:
             reply_text = render_template(
                 MessageTemplate.ADD_CONFIRMATION, content, bold=True)
-        else:
-            reply_text = render_template(MessageTemplate.DUPLICATE, content)
-            Task.find_task(chat_id, content).update_notification_date(
-                remember=False)
+
+        elif task.finish_date:
+            reply_text = render_template(
+                MessageTemplate.DUPLICATE_DONE_TASK,
+                content,
+                timestamp_to_date(task.start_date),
+                timestamp_to_date(task.finish_date))
+
+        elif task.forgot_counter:
+            reply_text = render_template(
+                MessageTemplate.DUPLICATE_ACTIVE_TASK, content)
 
     # cancel
     elif answer == AnswerOption.CANCEL:
@@ -129,7 +141,7 @@ def handle_quiz_dialog(bot, update):
 
     # user want to stop learning term
     elif answer == AnswerOption.REMOVE:
-        task.set_status(TaskStatus.DONE)
+        task.mark_done()
         reply_text = render_template(MessageTemplate.REGULAR_REPLY)
 
     edit_message(bot, update, reply_text)

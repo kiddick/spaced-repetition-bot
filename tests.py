@@ -7,7 +7,8 @@ import models
 import bot
 from models import Task, TaskStatus
 from utils import encode_callback_data, decode_callback_data, \
-    render_template, format_task_content, decode_answer_option
+    render_template, format_task_content, decode_answer_option, \
+    timestamp_to_date
 from bot import callback_handler, remind_task_to_user, \
     AnswerOption, MessageTemplate
 
@@ -98,6 +99,14 @@ class TestModelsCommonOperations(TestCase):
             self.assertEqual(task.status, TaskStatus.DONE)
             task.set_status(TaskStatus.ACTIVE)
             self.assertEqual(task.status, TaskStatus.ACTIVE)
+
+    @patch('models.get_current_timestamp')
+    def test_mark_done(self, current_date):
+        with test_database(test_db, (Task,)):
+            task = Task.create(chat_id=1, content='stuff')
+            task.mark_done()
+            self.assertEqual(task.status, TaskStatus.DONE)
+            self.assertEqual(task.finish_date, current_date())
 
     def test_forgot_counter(self):
         with test_database(test_db, (Task,)):
@@ -218,30 +227,35 @@ class TestBotCommon(TestCase):
 
         self.assertEqual(format_task_content(' a '), format_task_content('A'))
 
+    def test_from_timestamp(self):
+        pretty_date = timestamp_to_date(0)
+        self.assertIn('01/01/1970', pretty_date)
 
-class TestBot(TestCase):
+
+class TestBotCallbacks(TestCase):
 
     def setUp(self):
         message = MagicMock(chat_id=777, message_id=111)
         callback_query = MagicMock(message=message, data='')
         self.update = MagicMock(callback_query=callback_query)
         self.bot = MagicMock()
+
         patcher = patch('bot.render_template')
         self.addCleanup(patcher.stop)
         self.mock_render = patcher.start()
 
-    def _set_callback_data(self, answer_option, text):
+    def answer(self, answer_option, text):
+        ''' Emulate user click on a callback button'''
         data = encode_callback_data(answer_option, text)
         self.update.callback_query.data = data
+        callback_handler(self.bot, self.update)
 
     def assertRendered(self, message_template):
         self.assertIn(message_template, self.mock_render.call_args[0])
 
     def test_add_task(self):
         with test_database(test_db, (Task,)):
-            self._set_callback_data(AnswerOption.ADD_TASK, 'python')
-
-            callback_handler(self.bot, self.update)
+            self.answer(AnswerOption.ADD_TASK, 'python')
 
             self.assertEqual(Task.select(), 1)
             task = Task.find_task(777, 'python')
@@ -252,21 +266,19 @@ class TestBot(TestCase):
     def test_remove_task(self):
         with test_database(test_db, (Task,)):
             Task.create(chat_id=777, content='python')
-            self._set_callback_data(AnswerOption.REMOVE, 'python')
+            self.answer(AnswerOption.REMOVE, 'python')
 
-            callback_handler(self.bot, self.update)
             task = Task.get()
             self.assertEqual(task.status, TaskStatus.DONE)
+            self.assertGreater(task.finish_date, 0)
             self.assertRendered(MessageTemplate.REGULAR_REPLY)
 
     @patch.object(models.Task, 'update_notification_date')
     def test_user_remember_task(self, update_date):
         with test_database(test_db, (Task,)):
-            self._set_callback_data(AnswerOption.ADD_TASK, 'stuff')
-            callback_handler(self.bot, self.update)
+            self.answer(AnswerOption.ADD_TASK, 'stuff')
 
-            self._set_callback_data(AnswerOption.REMEMBER, 'stuff')
-            callback_handler(self.bot, self.update)
+            self.answer(AnswerOption.REMEMBER, 'stuff')
 
             update_date.assert_called_with(remember=True)
             self.assertRendered(MessageTemplate.REMEMBER)
@@ -274,19 +286,16 @@ class TestBot(TestCase):
     @patch.object(models.Task, 'update_notification_date')
     def test_user_forgot_task(self, update_date):
         with test_database(test_db, (Task,)):
-            self._set_callback_data(AnswerOption.ADD_TASK, 'thing')
-            callback_handler(self.bot, self.update)
+            self.answer(AnswerOption.ADD_TASK, 'thing')
 
-            self._set_callback_data(AnswerOption.FORGOT, 'thing')
-            callback_handler(self.bot, self.update)
+            self.answer(AnswerOption.FORGOT, 'thing')
 
             update_date.assert_called_with(remember=False)
             self.assertRendered(MessageTemplate.FORGOT)
 
     def test_cancel_task_creation(self):
         with test_database(test_db, (Task,)):
-            self._set_callback_data(AnswerOption.CANCEL, 'text')
-            callback_handler(self.bot, self.update)
+            self.answer(AnswerOption.CANCEL, 'text')
 
             self.assertEqual(len(Task.select()), 0)
             self.assertRendered(MessageTemplate.REGULAR_REPLY)
@@ -299,13 +308,22 @@ class TestBot(TestCase):
             self.assertEqual(task.status, TaskStatus.WAITING_ANSWER)
             self.assertRendered(MessageTemplate.NOTIFICATION_QUESTION)
 
-    def test_add_existing_task(self):
+    def test_add_existing_active_task(self):
         with test_database(test_db, (Task,)):
-            self._set_callback_data(AnswerOption.ADD_TASK, 'JS')
-            callback_handler(self.bot, self.update)
-            callback_handler(self.bot, self.update)
+            self.answer(AnswerOption.ADD_TASK, 'JS')
+            self.answer(AnswerOption.ADD_TASK, 'JS')
 
-            self.assertRendered(MessageTemplate.DUPLICATE)
+            self.assertRendered(MessageTemplate.DUPLICATE_ACTIVE_TASK)
+            self.assertEqual(len(Task.select()), 1)
+            self.assertEqual(Task.get().forgot_counter, 1)
+
+    def test_add_finished_task(self):
+        with test_database(test_db, (Task,)):
+            self.answer(AnswerOption.ADD_TASK, 'JS')
+            self.answer(AnswerOption.REMOVE, 'JS')
+            self.answer(AnswerOption.ADD_TASK, 'JS')
+
+            self.assertRendered(MessageTemplate.DUPLICATE_DONE_TASK)
             self.assertEqual(len(Task.select()), 1)
             self.assertEqual(Task.get().forgot_counter, 1)
 

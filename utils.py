@@ -1,4 +1,5 @@
 import re
+import datetime
 
 
 def encode_callback_data(answer_option, data):
@@ -29,3 +30,8 @@ def format_task_content(content):
         first_letter = content[0]
         content = first_letter.upper() + content[1:]
     return content
+
+
+def timestamp_to_date(timestamp):
+    return datetime.datetime.fromtimestamp(
+        int(timestamp)).strftime('%H:%M %d/%m/%Y')

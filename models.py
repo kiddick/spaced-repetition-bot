@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from peewee import *
 
 DATABASE_NAME = 'tasks.db'
+#TODO: move to config
 time_intervals = [1, 3, 5, 60, 120, 240]
 
 db = SqliteDatabase(DATABASE_NAME)
@@ -41,6 +42,7 @@ class Task(BaseModel):
     notification_date = IntegerField(
         index=True, default=generate_notification_date)
     start_date = IntegerField(default=get_current_timestamp)
+    finish_date = IntegerField(default=0)
     chat_id = IntegerField(index=True, default=0)
     status = IntegerField(default=TaskStatus.ACTIVE)
     forgot_counter = IntegerField(default=0)
@@ -115,6 +117,12 @@ class Task(BaseModel):
         else:
             task.update_notification_date(remember=False)
             return task
+
+    def mark_done(self):
+        with db.transaction():
+            self.status = TaskStatus.DONE
+            self.finish_date = get_current_timestamp()
+            self.save()
 
 
 def create_tables():
