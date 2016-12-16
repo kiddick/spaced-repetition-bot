@@ -15,7 +15,7 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, \
 from models import Task, TaskStatus, get_current_timestamp
 from utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
-    timestamp_to_date
+    timestamp_to_date, load_config
 
 logging.basicConfig(
     level=logging.INFO,
@@ -212,8 +212,9 @@ def add_handlers(dsp):
 
 
 if __name__ == '__main__':
-    with open('token') as token_file:
-        updater = Updater(token_file.read().strip())
+    config = load_config()
+
+    updater = Updater(config['bot_token'])
 
     add_handlers(updater.dispatcher)
     updater.start_polling()

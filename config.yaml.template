@@ -1,0 +1,12 @@
+# path to sqlite database file
+database_name: 'tasks.db'
+
+# telegram bot token
+bot_token: '#@87yh287cb2y0uwqe-0'
+
+# list of time periods for updating notification dates
+# values should be in seconds
+time_intervals:
+  - 5
+  - 10
+  - 60
