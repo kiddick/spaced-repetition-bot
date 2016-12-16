@@ -109,7 +109,8 @@ class Task(BaseModel):
             self.save()
 
     def __repr__(self):
-        return 'Task<{}: {}>'.format(self.chat_id, self.content)
+        return '<Task: chat_id={}, content={}>'.format(
+            self.chat_id, self.content)
 
     @classmethod
     def create(self, chat_id, content, **kwargs):
