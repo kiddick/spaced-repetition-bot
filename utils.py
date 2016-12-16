@@ -1,4 +1,5 @@
 import re
+import yaml
 import datetime
 
 
@@ -35,3 +36,8 @@ def format_task_content(content):
 def timestamp_to_date(timestamp):
     return datetime.datetime.fromtimestamp(
         int(timestamp)).strftime('%H:%M %d/%m/%Y')
+
+
+def load_config():
+    with open('config.yaml') as stream:
+        return yaml.load(stream)

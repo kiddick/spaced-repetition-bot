@@ -3,9 +3,13 @@ from datetime import datetime, timezone
 
 from peewee import *
 
-DATABASE_NAME = 'tasks.db'
-#TODO: move to config
-time_intervals = [1, 3, 5, 60, 120, 240]
+from utils import load_config
+
+
+config = load_config()
+DATABASE_NAME = config['database_name']
+time_intervals = config['time_intervals']
+
 
 db = SqliteDatabase(DATABASE_NAME)
 
@@ -53,8 +57,9 @@ class Task(BaseModel):
 
         if remember and (self.iteration == len(time_intervals) - 1):
             # Learning process has finished
-            self.status = TaskStatus.DONE
             with db.transaction():
+                self.status = TaskStatus.DONE
+                self.finish_date = get_current_timestamp()
                 self.save()
             return False
 

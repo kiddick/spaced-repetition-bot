@@ -308,6 +308,16 @@ class TestBotCallbacks(TestCase):
             self.assertEqual(task.status, TaskStatus.WAITING_ANSWER)
             self.assertRendered(MessageTemplate.NOTIFICATION_QUESTION)
 
+    @patch.object(models, 'time_intervals', [5])
+    def test_user_has_learned_term(self):
+        with test_database(test_db, (Task,)):
+            self.answer(AnswerOption.ADD_TASK, 'Quick')
+            self.answer(AnswerOption.REMEMBER, 'Quick')
+
+            self.assertRendered(MessageTemplate.TERM_HAS_LEARNED)
+            self.assertEqual(Task.get().status, TaskStatus.DONE)
+            self.assertGreater(Task.get().finish_date, 0)
+
     def test_add_existing_active_task(self):
         with test_database(test_db, (Task,)):
             self.answer(AnswerOption.ADD_TASK, 'JS')
