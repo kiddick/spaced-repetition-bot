@@ -35,10 +35,11 @@ class MessageTemplate(object):
     NOTIFICATION_QUESTION = 'Do you remember the meaning of {}?'
     ADD_CONFIRMATION = 'You will receive reminder about {} soon'
     REGULAR_REPLY = 'As you wish'
+    REMOVAL_CONFIRM = '{} was removed from reminder list'
     ERROR_MESSAGE = 'Some error with database occured'
     TERM_HAS_LEARNED = 'Awesome! Seems like you\'ve learned {}'
-    REMEMBER = 'Good job! Next notification in {} sec'
-    FORGOT = 'Notification counter was reset'
+    REMEMBER = 'Good job! Next notification about {} after {} sec'
+    FORGOT = 'Notification counter for {} was reset'
     DUPLICATE_ACTIVE_TASK = (
         'You\'re already learning {}. '
         'I\'m resetting notification counter')
@@ -129,7 +130,7 @@ def handle_quiz_dialog(bot, update):
 
         if time_interval:
             reply_text = render_template(
-                MessageTemplate.REMEMBER, time_interval)
+                MessageTemplate.REMEMBER, task.content, time_interval)
         else:
             reply_text = render_template(
                 MessageTemplate.TERM_HAS_LEARNED, content, bold=True)
@@ -137,12 +138,13 @@ def handle_quiz_dialog(bot, update):
     # user forgot a term
     elif answer == AnswerOption.FORGOT:
         task.update_notification_date(remember=False)
-        reply_text = render_template(MessageTemplate.FORGOT)
+        reply_text = render_template(MessageTemplate.FORGOT, task.content)
 
     # user want to stop learning term
     elif answer == AnswerOption.REMOVE:
         task.mark_done()
-        reply_text = render_template(MessageTemplate.REGULAR_REPLY)
+        reply_text = render_template(
+            MessageTemplate.REMOVAL_CONFIRM, task.content)
 
     edit_message(bot, update, reply_text)
 
@@ -201,7 +203,7 @@ def task_watcher(bot):
     while True:
         for task in Task.get_active_tasks():
             Thread(target=remind_task_to_user, args=(bot, task)).start()
-        time.sleep(1)
+        time.sleep(10)
 
 
 def add_handlers(dsp):

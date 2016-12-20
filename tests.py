@@ -271,7 +271,7 @@ class TestBotCallbacks(TestCase):
             task = Task.get()
             self.assertEqual(task.status, TaskStatus.DONE)
             self.assertGreater(task.finish_date, 0)
-            self.assertRendered(MessageTemplate.REGULAR_REPLY)
+            self.assertRendered(MessageTemplate.REMOVAL_CONFIRM)
 
     @patch.object(models.Task, 'update_notification_date')
     def test_user_remember_task(self, update_date):
