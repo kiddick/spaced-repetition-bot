@@ -19,9 +19,9 @@ def get_time_delta(delta_index):
 
 
 class TaskStatus(object):
-    WAITING_ANSWER = 0
-    ACTIVE = 1
-    DONE = 2
+    WAITING_ANSWER = 'waiting'
+    ACTIVE = 'active'
+    DONE = 'done'
 
 
 def get_current_timestamp():
@@ -48,7 +48,7 @@ class Task(BaseModel):
     start_date = IntegerField(default=get_current_timestamp)
     finish_date = IntegerField(default=0)
     chat_id = IntegerField(index=True, default=0)
-    status = IntegerField(default=TaskStatus.ACTIVE)
+    status = CharField(default=TaskStatus.ACTIVE)
     forgot_counter = IntegerField(default=0)
 
     def update_notification_date(self, remember):
