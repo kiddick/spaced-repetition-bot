@@ -40,4 +40,11 @@ def timestamp_to_date(timestamp):
 
 def load_config():
     with open('config.yaml') as stream:
-        return yaml.load(stream)
+        config = yaml.load(stream)
+
+    time_multiplier = config['intervals_multiplier']
+    config['time_intervals'] = [
+        interval * time_multiplier for interval in config['time_intervals']
+    ]
+
+    return config

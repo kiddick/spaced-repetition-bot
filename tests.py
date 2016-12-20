@@ -8,12 +8,24 @@ import bot
 from models import Task, TaskStatus
 from utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
-    timestamp_to_date
+    timestamp_to_date, load_config
 from bot import callback_handler, remind_task_to_user, \
     AnswerOption, MessageTemplate
 
 
 test_db = SqliteDatabase(':memory:')
+
+
+class TestUtils(TestCase):
+
+    @patch('utils.yaml.load')
+    def test_load_config_intervals_multiplier(self, yaml_load):
+        yaml_load.return_value = {
+            'time_intervals': [1, 2, 3],
+            'intervals_multiplier': 60
+        }
+        config = load_config()
+        self.assertEqual(config['time_intervals'], [60, 120, 180])
 
 
 class TestModelCreation(TestCase):
