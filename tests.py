@@ -8,7 +8,7 @@ import bot
 from models import Task, TaskStatus
 from utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
-    timestamp_to_date, load_config
+    timestamp_to_date, load_config, _convert_handwrite_to_seconds
 from bot import callback_handler, remind_task_to_user, \
     AnswerOption, MessageTemplate
 
@@ -21,11 +21,30 @@ class TestUtils(TestCase):
     @patch('utils.yaml.load')
     def test_load_config_intervals_multiplier(self, yaml_load):
         yaml_load.return_value = {
-            'time_intervals': [1, 2, 3],
-            'intervals_multiplier': 60
+            'time_intervals': ['1s', '2m3s']
         }
         config = load_config()
-        self.assertEqual(config['time_intervals'], [60, 120, 180])
+        self.assertEqual(config['time_intervals'], [1, 123])
+
+    def test_convert_handwrite_to_seconds(self):
+        minute = 60
+        hour = 60 * minute
+        day = 24 * hour
+        week = 7 * day
+        self.assertEqual(_convert_handwrite_to_seconds('7s'), 7)
+        self.assertEqual(_convert_handwrite_to_seconds('60s'), minute)
+        self.assertEqual(_convert_handwrite_to_seconds('1m'), minute)
+        self.assertEqual(_convert_handwrite_to_seconds('1h'), hour)
+        self.assertEqual(_convert_handwrite_to_seconds('2d'), 2 * day)
+        self.assertEqual(_convert_handwrite_to_seconds('3w'), 3 * week)
+
+        self.assertEqual(_convert_handwrite_to_seconds('5.5d'), 5.5 * day)
+        self.assertEqual(_convert_handwrite_to_seconds('0.5h'), 30 * minute)
+        self.assertEqual(_convert_handwrite_to_seconds('1.5m'), 1.5 * minute)
+
+        self.assertEqual(_convert_handwrite_to_seconds('1m5s'), 65)
+        self.assertEqual(_convert_handwrite_to_seconds('1.5m2.5s'), 92.5)
+        self.assertEqual(_convert_handwrite_to_seconds('1w1d'), week + day)
 
 
 class TestModelCreation(TestCase):

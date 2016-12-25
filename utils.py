@@ -38,13 +38,28 @@ def timestamp_to_date(timestamp):
         int(timestamp)).strftime('%H:%M %d/%m/%Y')
 
 
+def _convert_handwrite_to_seconds(conf_value):
+    multiplier = {
+        's': 1,
+        'm': 60,
+        'h': 3600,
+        'd': 86400,
+        'w': 604800
+    }
+    result = 0
+    for time_value in re.findall(r'.+?[smhdw]', conf_value):
+        time_prefix = time_value[-1]
+        value = float(time_value[:-1])
+        result += value * multiplier[time_prefix]
+    return result
+
+
 def load_config():
     with open('config.yaml') as stream:
         config = yaml.load(stream)
 
-    time_multiplier = config['intervals_multiplier']
     config['time_intervals'] = [
-        interval * time_multiplier for interval in config['time_intervals']
+        _convert_handwrite_to_seconds(i) for i in config['time_intervals']
     ]
 
     return config

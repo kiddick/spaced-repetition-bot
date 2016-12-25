@@ -5,10 +5,6 @@ database_name: 'tasks.db'
 bot_token: '#@87yh287cb2y0uwqe-0'
 
 # list of time periods for updating notification dates
-# values should be in seconds
-time_intervals: [5, 10, 25]
-
-# value each interval will be multiplied with
-# e.g, set it to 60 and intervals [2, 4] will be equal to 2 and 4 minutes
-# or set it to 5184000 and treat intervals as days
-intervals_multiplier: 1
+# pattern: [0-9]+[smhdw]
+# combined values are supported as well: 1w2d, 1h30m
+time_intervals: [5m, 10m, 2h, 1d, 2d5h]
