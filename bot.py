@@ -38,7 +38,7 @@ class MessageTemplate(object):
     REMOVAL_CONFIRM = '{} was removed from reminder list'
     ERROR_MESSAGE = 'Some error with database occured'
     TERM_HAS_LEARNED = 'Awesome! Seems like you\'ve learned {}'
-    REMEMBER = 'Good job! Next notification about {} after {} sec'
+    REMEMBER = 'Good job! You are still remember {}'
     FORGOT = 'Notification counter for {} was reset'
     DUPLICATE_ACTIVE_TASK = (
         'You\'re already learning {}. '
@@ -130,7 +130,7 @@ def handle_quiz_dialog(bot, update):
 
         if time_interval:
             reply_text = render_template(
-                MessageTemplate.REMEMBER, task.content, time_interval)
+                MessageTemplate.REMEMBER, task.content)
         else:
             reply_text = render_template(
                 MessageTemplate.TERM_HAS_LEARNED, content, bold=True)
