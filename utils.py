@@ -20,7 +20,8 @@ def render_template(template, *args, bold=False):
         raise IndexError('Number of arguments did not match with template')
 
     if bold:
-        template = template.replace('{}', '*{}*')
+        # TODO: Fix bug with HTML tag in message
+        template = template.replace('{}', '<b>{}</b>')
 
     return template.format(*args)
 

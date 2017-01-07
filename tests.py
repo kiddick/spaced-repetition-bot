@@ -239,7 +239,7 @@ class TestBotCommon(TestCase):
         self.assertEqual(text, '2 args')
 
         text = render_template('{} text', 'bold', bold=True)
-        self.assertEqual(text, '*bold* text')
+        self.assertEqual(text, '<b>bold</b> text')
 
         self.assertEqual(render_template('Pure text'), 'Pure text')
 

@@ -65,7 +65,7 @@ def handle_text(bot, update):
         chat_id=update.message.chat_id,
         text=text,
         reply_markup=markup,
-        parse_mode=ParseMode.MARKDOWN)
+        parse_mode=ParseMode.HTML)
 
 
 def edit_message(bot, update, text):
@@ -73,7 +73,7 @@ def edit_message(bot, update, text):
         text=text,
         chat_id=update.callback_query.message.chat_id,
         message_id=update.callback_query.message.message_id,
-        parse_mode=ParseMode.MARKDOWN)
+        parse_mode=ParseMode.HTML)
 
 
 def handle_task_creation_dialog(bot, update):
@@ -192,7 +192,7 @@ def remind_task_to_user(bot, task):
         chat_id=task.chat_id,
         text=text,
         reply_markup=markup,
-        parse_mode=ParseMode.MARKDOWN)
+        parse_mode=ParseMode.HTML)
 
 
 def error(bot, update, error):
