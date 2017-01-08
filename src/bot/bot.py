@@ -12,8 +12,8 @@ from telegram import InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, \
     MessageHandler, Filters
 
-from models import Task, TaskStatus, get_current_timestamp
-from utils import encode_callback_data, decode_callback_data, \
+from src.bot.models import Task, TaskStatus, get_current_timestamp
+from src.bot.utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
     timestamp_to_date, load_config
 

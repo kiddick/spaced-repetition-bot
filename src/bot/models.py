@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from peewee import *
 
-from utils import load_config
+from src.bot.utils import load_config
 
 
 config = load_config()

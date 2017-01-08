@@ -3,13 +3,13 @@ from unittest.mock import patch, MagicMock
 from playhouse.test_utils import test_database
 from peewee import *
 
-import models
-import bot
-from models import Task, TaskStatus
-from utils import encode_callback_data, decode_callback_data, \
+import src.bot.models
+import src.bot.bot
+from src.bot.models import Task, TaskStatus
+from src.bot.utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
     timestamp_to_date, load_config, _convert_handwrite_to_seconds
-from bot import callback_handler, remind_task_to_user, \
+from src.bot.bot import callback_handler, remind_task_to_user, \
     AnswerOption, MessageTemplate
 
 
@@ -18,7 +18,7 @@ test_db = SqliteDatabase(':memory:')
 
 class TestUtils(TestCase):
 
-    @patch('utils.yaml.load')
+    @patch('src.bot.utils.yaml.load')
     def test_load_config_intervals_multiplier(self, yaml_load):
         yaml_load.return_value = {
             'time_intervals': ['1s', '2m3s']
@@ -49,8 +49,8 @@ class TestUtils(TestCase):
 
 class TestModelCreation(TestCase):
 
-    @patch.object(models, 'time_intervals', [5, 10])
-    @patch('models.get_current_timestamp')
+    @patch.object(src.bot.models, 'time_intervals', [5, 10])
+    @patch('src.bot.models.get_current_timestamp')
     def test_task_default_creation(self, current_date):
         with test_database(test_db, (Task,)):
             current_date.return_value = 100
@@ -68,16 +68,16 @@ class TestModelCreation(TestCase):
 class TestUpdateNotificationDate(TestCase):
 
     def setUp(self):
-        patcher = patch('models.get_current_timestamp')
+        patcher = patch('src.bot.models.get_current_timestamp')
         self.addCleanup(patcher.stop)
         self.mock_timestamp = patcher.start()
         self.current_date = 100
         self.mock_timestamp.return_value = self.current_date
 
-    @patch.object(models, 'time_intervals', [1, 2, 3])
+    @patch.object(src.bot.models, 'time_intervals', [1, 2, 3])
     def test_user_forgot_a_term(self):
         with test_database(test_db, (Task,)):
-            intervals = models.time_intervals
+            intervals = src.bot.models.time_intervals
 
             task = Task.create(chat_id=1, content='stuff')
             delta = intervals[0]
@@ -94,10 +94,10 @@ class TestUpdateNotificationDate(TestCase):
             self.assertEqual(time_gap, intervals[0])
             self.assertEqual(task.status, TaskStatus.ACTIVE)
 
-    @patch.object(models, 'time_intervals', [1, 2, 3])
+    @patch.object(src.bot.models, 'time_intervals', [1, 2, 3])
     def test_user_remember_a_term(self):
         with test_database(test_db, (Task,)):
-            intervals = models.time_intervals
+            intervals = src.bot.models.time_intervals
 
             task = Task.create(chat_id=1, content='stuff')
 
@@ -111,7 +111,7 @@ class TestUpdateNotificationDate(TestCase):
             self.assertEqual(new_date, self.current_date + intervals[2])
             self.assertEqual(task.status, TaskStatus.ACTIVE)
 
-    @patch.object(models, 'time_intervals', [2, 3])
+    @patch.object(src.bot.models, 'time_intervals', [2, 3])
     def test_maximum_intervals_reached(self):
         with test_database(test_db, (Task,)):
             task = Task.create(chat_id=1, content='stuff')
@@ -131,7 +131,7 @@ class TestModelsCommonOperations(TestCase):
             task.set_status(TaskStatus.ACTIVE)
             self.assertEqual(task.status, TaskStatus.ACTIVE)
 
-    @patch('models.get_current_timestamp')
+    @patch('src.bot.models.get_current_timestamp')
     def test_mark_done(self, current_date):
         with test_database(test_db, (Task,)):
             task = Task.create(chat_id=1, content='stuff')
@@ -172,7 +172,7 @@ class TestModelsCommonOperations(TestCase):
             self.assertEqual(task.chat_id, 2)
             self.assertEqual(task.content, 'def')
 
-    @patch('models.get_current_timestamp')
+    @patch('src.bot.models.get_current_timestamp')
     def test_get_active_tasks(self, current_date):
         current_date.return_value = 0
 
@@ -271,7 +271,7 @@ class TestBotCallbacks(TestCase):
         self.update = MagicMock(callback_query=callback_query)
         self.bot = MagicMock()
 
-        patcher = patch('bot.render_template')
+        patcher = patch('src.bot.bot.render_template')
         self.addCleanup(patcher.stop)
         self.mock_render = patcher.start()
 
@@ -304,7 +304,7 @@ class TestBotCallbacks(TestCase):
             self.assertGreater(task.finish_date, 0)
             self.assertRendered(MessageTemplate.REMOVAL_CONFIRM)
 
-    @patch.object(models.Task, 'update_notification_date')
+    @patch.object(src.bot.models.Task, 'update_notification_date')
     def test_user_remember_task(self, update_date):
         with test_database(test_db, (Task,)):
             self.answer(AnswerOption.ADD_TASK, 'stuff')
@@ -314,7 +314,7 @@ class TestBotCallbacks(TestCase):
             update_date.assert_called_with(remember=True)
             self.assertRendered(MessageTemplate.REMEMBER)
 
-    @patch.object(models.Task, 'update_notification_date')
+    @patch.object(src.bot.models.Task, 'update_notification_date')
     def test_user_forgot_task(self, update_date):
         with test_database(test_db, (Task,)):
             self.answer(AnswerOption.ADD_TASK, 'thing')
@@ -339,7 +339,7 @@ class TestBotCallbacks(TestCase):
             self.assertEqual(task.status, TaskStatus.WAITING_ANSWER)
             self.assertRendered(MessageTemplate.NOTIFICATION_QUESTION)
 
-    @patch.object(models, 'time_intervals', [5])
+    @patch.object(src.bot.models, 'time_intervals', [5])
     def test_user_has_learned_term(self):
         with test_database(test_db, (Task,)):
             self.answer(AnswerOption.ADD_TASK, 'Quick')
