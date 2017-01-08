@@ -1,3 +1,4 @@
+import os
 import re
 import yaml
 import datetime
@@ -56,7 +57,8 @@ def _convert_handwrite_to_seconds(conf_value):
 
 
 def load_config():
-    with open('config.yaml') as stream:
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(cwd, 'config.yaml')) as stream:
         config = yaml.load(stream)
 
     config['time_intervals'] = [
