@@ -1,0 +1,28 @@
+#login {
+  font-family: 'Montserrat', sans-serif;
+  display: none;
+  width: 300px;
+  margin: 0 auto;
+  text-align: center; }
+  #login button {
+    border: 1px solid black;
+    background-color: #c1d9ff;
+    font-weight: bold; }
+
+#loggedIn {
+  width: 150px;
+  font-family: 'Montserrat', sans-serif;
+  display: none; }
+
+.path {
+  stroke-dasharray: 800;
+  stroke-dashoffset: 10;
+  animation: dash 1s linear; }
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 1000; }
+  to {
+    stroke-dashoffset: 0; } }
+
+/*# sourceMappingURL=popup.css.map */
