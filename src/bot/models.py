@@ -1,13 +1,14 @@
 import time
+import random
 from datetime import datetime, timezone
 
 from peewee import *
-
 from src.bot.utils import load_config
 
 
 config = load_config()
 DATABASE_NAME = config['database_name']
+API_KEY_SIZE = 15
 time_intervals = config['time_intervals']
 
 
@@ -131,9 +132,51 @@ class Task(BaseModel):
             self.save()
 
 
+class User(BaseModel):
+    chat_id = IntegerField(index=True, default=0)
+    public_api_key = CharField(index=True, default='')
+
+    def generate_api_key(self):
+        alph = [str(x) for x in range(10)] + [chr(97 + x) for x in range(26)]
+        mess = ''.join([random.choice(alph) for x in range(API_KEY_SIZE)])
+        key = '{}:{}'.format(self.chat_id, mess)
+        with db.transaction():
+            self.public_api_key = key
+            self.save()
+
+        return key
+
+    @property
+    def api_key(self):
+        if not self.public_api_key:
+            self.generate_api_key()
+
+        return self.public_api_key
+
+    @classmethod
+    def find(cls, chat_id):
+        try:
+            return User.get(User.chat_id == int(chat_id))
+        except DoesNotExist:
+            return User.create(chat_id=chat_id)
+
+    @classmethod
+    def find_by_api_key(self, api_key):
+        try:
+            return User.get(User.public_api_key == api_key)
+        except DoesNotExist:
+            return None
+
+    def to_public_dict(self):
+        return {
+            'chat_id': self.chat_id,
+            'api_key': self.public_api_key
+        }
+
+
 def create_tables():
     with db.transaction():
-        for model in [Task]:
+        for model in [Task, User]:
             if not model.table_exists():
                 db.create_table(model)
 

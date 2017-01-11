@@ -5,7 +5,7 @@ from peewee import *
 
 import src.bot.models
 import src.bot.bot
-from src.bot.models import Task, TaskStatus
+from src.bot.models import Task, TaskStatus, User
 from src.bot.utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
     timestamp_to_date, load_config, _convert_handwrite_to_seconds
@@ -368,6 +368,34 @@ class TestBotCallbacks(TestCase):
             self.assertEqual(len(Task.select()), 1)
             self.assertEqual(Task.get().forgot_counter, 1)
 
+
+class TestUser(TestCase):
+
+    @patch.object(src.bot.models, 'API_KEY_SIZE', 100)
+    def test_generate_api_key(self):
+        with test_database(test_db, (User,)):
+            user = User.create(chat_id=777)
+            api_key = user.generate_api_key()
+            chat_id, key = api_key.split(':')
+            self.assertEqual(user.chat_id, int(chat_id))
+            self.assertEqual(len(key), 100)
+
+            another_key = user.generate_api_key()
+            self.assertNotEqual(api_key, another_key)
+
+    def test_find(self):
+        with test_database(test_db, (User,)):
+            user = User.create(chat_id=777)
+            api_key = user.generate_api_key()
+            target = User.find(777)
+            self.assertEqual(target.api_key, api_key)
+
+    def test_find_creates_new_instance(self):
+        with test_database(test_db, (User,)):
+            user = User.find(chat_id=999)
+            self.assertEqual(user.chat_id, 999)
+            self.assertGreater(len(user.api_key), 1)
+            self.assertEqual(len(User.select()), 1)
 
 if __name__ == '__main__':
     main()

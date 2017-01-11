@@ -12,7 +12,7 @@ from telegram import InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, \
     MessageHandler, Filters
 
-from src.bot.models import Task, TaskStatus, get_current_timestamp
+from src.bot.models import Task, TaskStatus, User, get_current_timestamp
 from src.bot.utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
     timestamp_to_date, load_config
@@ -206,9 +206,15 @@ def task_watcher(bot):
         time.sleep(10)
 
 
+def get_api_key(bot, update):
+    api_key = User.find(update.message.chat_id).api_key
+    update.message.reply_text(api_key)
+
+
 def add_handlers(dsp):
     dsp.add_handler(CallbackQueryHandler(callback_handler))
     dsp.add_handler(CommandHandler('help', help))
+    dsp.add_handler(CommandHandler('apikey', get_api_key))
     dsp.add_handler(MessageHandler(Filters.text, handle_text))
     dsp.add_error_handler(error)
 
