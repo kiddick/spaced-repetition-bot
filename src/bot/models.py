@@ -85,7 +85,7 @@ class Task(BaseModel):
             self.save()
 
     @classmethod
-    def find_task(self, chat_id, content):
+    def find_task(cls, chat_id, content):
         try:
             return Task.get(
                 (Task.chat_id == chat_id) &
@@ -94,14 +94,14 @@ class Task(BaseModel):
             return None
 
     @classmethod
-    def get_active_tasks(self):
+    def get_active_tasks(cls):
         tasks = Task.select().where(
             (Task.notification_date <= get_current_timestamp()) &
             (Task.status == TaskStatus.ACTIVE))
         return tasks
 
     @classmethod
-    def get_users_tasks(self, chat_id):
+    def get_users_tasks(cls, chat_id):
         return Task.select().where(Task.chat_id == chat_id)
 
     def increase_forgot_counter(self, value=1):
@@ -114,7 +114,7 @@ class Task(BaseModel):
             self.chat_id, self.content)
 
     @classmethod
-    def create(self, chat_id, content, **kwargs):
+    def create(cls, chat_id, content, **kwargs):
         task = Task.find_task(chat_id, content)
         if not task:
             with db.transaction():
@@ -161,7 +161,7 @@ class User(BaseModel):
             return User.create(chat_id=chat_id)
 
     @classmethod
-    def find_by_api_key(self, api_key):
+    def find_by_api_key(cls, api_key):
         try:
             return User.get(User.public_api_key == api_key)
         except DoesNotExist:
