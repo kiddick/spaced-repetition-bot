@@ -3,6 +3,7 @@ from functools import wraps
 from flask import Flask, request, jsonify
 
 from src.bot.models import User, Task
+from src.bot.utils import format_task_content
 
 
 app = Flask(__name__)
@@ -36,7 +37,9 @@ def authorize(api_key, user):
 def add_term(api_key, user):
     term = request.args.get('term')
 
-    if term and Task.create(chat_id=user.chat_id, content=term):
+    if term and Task.create(
+            chat_id=user.chat_id,
+            content=format_task_content(term)):
         return jsonify(status=True)
     else:
         return jsonify(status=False)
