@@ -74,10 +74,12 @@ class Task(BaseModel):
 
         if remember:
             self.iteration += 1
+            Activity.increment(self.chat_id, Activity.REMEMBER)
 
         elif not remember:
             self.iteration = 0
             self.forgot_counter += 1
+            Activity.increment(self.chat_id, Activity.FORGOT)
 
         self.status = TaskStatus.ACTIVE
         self.notification_date = generate_notification_date(self.iteration)
@@ -122,16 +124,18 @@ class Task(BaseModel):
             self.chat_id, self.content)
 
     @classmethod
-    def create(cls, chat_id, content, **kwargs):
+    def create(cls, chat_id, content, origin=None, **kwargs):
         task = Task.find_task(chat_id, content)
         if not task:
             with db.transaction():
-                new_task = Task(chat_id=chat_id, content=content, **kwargs)
-                new_task.save()
-            return new_task
+                task = Task(chat_id=chat_id, content=content, **kwargs)
+                task.save()
+            if origin:
+                Activity.increment(task.chat_id, origin)
         else:
             task.update_notification_date(remember=False)
-            return task
+
+        return task
 
     def mark_done(self):
         with db.transaction():
@@ -183,8 +187,8 @@ class User(BaseModel):
 
 
 class Activity(BaseModel):
-    __events_ids = [x for x in range(4)]
-    ADD_EXT, ADD_BOT, REMEMBER, FORGOT = __events_ids
+    _events_ids = [x for x in range(1, 5)]
+    ADD_EXT, ADD_BOT, REMEMBER, FORGOT = _events_ids
 
     date = IntegerField(default=get_current_day)
     chat_id = IntegerField(default=0)
@@ -205,7 +209,7 @@ class Activity(BaseModel):
 
     @classmethod
     def increment(cls, chat_id, event):
-        if event not in cls.__events_ids:
+        if event not in cls._events_ids:
             return
 
         with db.transaction():
@@ -227,7 +231,7 @@ class Activity(BaseModel):
 
 def create_tables():
     with db.transaction():
-        for model in [Task, User]:
+        for model in [Task, User, Activity]:
             if not model.table_exists():
                 db.create_table(model)
 

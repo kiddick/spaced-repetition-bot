@@ -2,7 +2,7 @@ from functools import wraps
 
 from flask import Flask, request, jsonify
 
-from src.bot.models import User, Task
+from src.bot.models import User, Task, Activity
 from src.bot.utils import format_task_content
 
 
@@ -39,7 +39,8 @@ def add_term(api_key, user):
 
     if term and Task.create(
             chat_id=user.chat_id,
-            content=format_task_content(term)):
+            content=format_task_content(term),
+            origin=Activity.ADD_EXT):
         return jsonify(status=True)
     else:
         return jsonify(status=False)

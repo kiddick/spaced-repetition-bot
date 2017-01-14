@@ -12,7 +12,8 @@ from telegram import InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, \
     MessageHandler, Filters
 
-from src.bot.models import Task, TaskStatus, User, get_current_timestamp
+from src.bot.models import Task, TaskStatus, User, Activity, \
+    get_current_timestamp
 from src.bot.utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
     timestamp_to_date, load_config
@@ -85,7 +86,10 @@ def handle_task_creation_dialog(bot, update):
         content = decode_callback_data(callback_data)
         chat_id = update.callback_query.message.chat_id
 
-        task = Task.create(content=content, chat_id=chat_id)
+        task = Task.create(
+            content=content,
+            chat_id=chat_id,
+            origin=Activity.ADD_BOT)
 
         if task.forgot_counter == 0:
             reply_text = render_template(

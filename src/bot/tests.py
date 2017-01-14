@@ -88,7 +88,7 @@ class TestTaskCreation(TestCase):
         self.assertEqual(task.chat_id, 52)
 
 
-@with_test_db(Task)
+@with_test_db(Task, Activity)
 class TestUpdateNotificationDate(TestCase):
 
     def setUp(self):
@@ -142,7 +142,7 @@ class TestUpdateNotificationDate(TestCase):
         self.assertEqual(task.status, TaskStatus.DONE)
 
 
-@with_test_db(Task)
+@with_test_db(Task, Activity)
 class TestModelsCommonOperations(TestCase):
 
     def test_change_status(self):
@@ -278,11 +278,11 @@ class TestBotCommon(TestCase):
         self.assertIn('01/01/1970', pretty_date)
 
 
-@with_test_db(Task)
-class TestBotCallbacks(TestCase):
+class BotTestCase(TestCase):
 
     def setUp(self):
-        message = MagicMock(chat_id=777, message_id=111)
+        self.chat_id = 777
+        message = MagicMock(chat_id=self.chat_id, message_id=111)
         callback_query = MagicMock(message=message, data='')
         self.update = MagicMock(callback_query=callback_query)
         self.bot = MagicMock()
@@ -299,6 +299,10 @@ class TestBotCallbacks(TestCase):
 
     def assertRendered(self, message_template):
         self.assertIn(message_template, self.mock_render.call_args[0])
+
+
+@with_test_db(Task, Activity)
+class TestBotCallbacks(BotTestCase):
 
     def test_add_task(self):
         self.answer(AnswerOption.ADD_TASK, 'python')
@@ -435,6 +439,25 @@ class TestActivity(TestCase):
         self.assertEqual(Activity.get_user_data(13), [])
         Activity.increment(13, Activity.REMEMBER)
         self.assertEqual(len(Activity.get_user_data(13)), 1)
+
+
+@with_test_db(Task, Activity)
+class TestActivityWithBot(BotTestCase):
+
+    def test_increment(self):
+        self.answer(AnswerOption.ADD_TASK, 'JS')
+        self.answer(AnswerOption.REMEMBER, 'JS')
+        self.answer(AnswerOption.FORGOT, 'JS')
+
+        self.assertEqual(Activity.get(self.chat_id).bot_add, 1)
+        self.assertEqual(Activity.get(self.chat_id).remember_count, 1)
+        self.assertEqual(Activity.get(self.chat_id).forgot_count, 1)
+
+    def test_add_duplicated_task(self):
+        self.answer(AnswerOption.ADD_TASK, 'JS')
+        self.answer(AnswerOption.ADD_TASK, 'JS')
+        self.assertEqual(Activity.get(self.chat_id).bot_add, 1)
+        self.assertEqual(Activity.get(self.chat_id).forgot_count, 1)
 
 
 if __name__ == '__main__':
