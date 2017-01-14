@@ -1,6 +1,6 @@
 import time
 import random
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from peewee import *
 from src.bot.utils import load_config
@@ -29,6 +29,14 @@ def get_current_timestamp():
     timestamp = time.time()
     # timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).timestamp()
     return int(timestamp)
+
+
+def get_current_day():
+    # TODO: align all the time stuff
+    now = datetime.fromtimestamp(get_current_timestamp())
+    this_day = datetime(year=now.year, month=now.month, day=now.day)
+    day_timestamp = (this_day - datetime(1970, 1, 1)) / timedelta(seconds=1)
+    return int(day_timestamp)
 
 
 def generate_notification_date(delta_index=0):
@@ -172,6 +180,49 @@ class User(BaseModel):
             'chat_id': self.chat_id,
             'api_key': self.public_api_key
         }
+
+
+class Activity(BaseModel):
+    __events_ids = [x for x in range(4)]
+    ADD_EXT, ADD_BOT, REMEMBER, FORGOT = __events_ids
+
+    date = IntegerField(default=get_current_day)
+    chat_id = IntegerField(default=0)
+    bot_add = IntegerField(default=0)
+    ext_add = IntegerField(default=0)
+    forgot_count = IntegerField(default=0)
+    remember_count = IntegerField(default=0)
+    # TODO: add active tasks and scheduler
+
+    @classmethod
+    def get(cls, chat_id):
+        date = get_current_day()
+        try:
+            record = super().get(chat_id=chat_id, date=date)
+        except DoesNotExist:
+            record = Activity.create(chat_id=chat_id)
+        return record
+
+    @classmethod
+    def increment(cls, chat_id, event):
+        if event not in cls.__events_ids:
+            return
+
+        with db.transaction():
+            record = Activity.get(chat_id)
+            if event == cls.ADD_EXT:
+                record.ext_add += 1
+            elif event == cls.ADD_BOT:
+                record.bot_add += 1
+            elif event == cls.FORGOT:
+                record.forgot_count += 1
+            elif event == cls.REMEMBER:
+                record.remember_count += 1
+            record.save()
+
+    @classmethod
+    def get_user_data(cls, chat_id):
+        return list(Activity.select().where(Activity.chat_id == chat_id))
 
 
 def create_tables():

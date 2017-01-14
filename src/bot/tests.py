@@ -5,7 +5,7 @@ from peewee import *
 
 import src.bot.models
 import src.bot.bot
-from src.bot.models import Task, TaskStatus, User
+from src.bot.models import Task, TaskStatus, User, Activity
 from src.bot.utils import encode_callback_data, decode_callback_data, \
     render_template, format_task_content, decode_answer_option, \
     timestamp_to_date, load_config, _convert_handwrite_to_seconds
@@ -396,6 +396,43 @@ class TestUser(TestCase):
             self.assertEqual(user.chat_id, 999)
             self.assertGreater(len(user.api_key), 1)
             self.assertEqual(len(User.select()), 1)
+
+
+class TestActivity(TestCase):
+
+    def test_get_or_create(self):
+        with test_database(test_db, (Activity,)):
+            record = Activity.get(chat_id=1)
+            record.remember_count = 1337
+            record.save()
+
+            same_rec = Activity.get(chat_id=1)
+            self.assertEqual(same_rec.remember_count, 1337)
+            self.assertEqual(len(Activity.select()), 1)
+
+            Activity.get(chat_id=2)
+            self.assertEqual(len(Activity.select()), 2)
+
+    def test_increment(self):
+        with test_database(test_db, (Activity,)):
+            Activity.increment(42, Activity.ADD_BOT)
+            self.assertEqual(Activity.get(chat_id=42).bot_add, 1)
+
+            Activity.increment(42, Activity.ADD_EXT)
+            self.assertEqual(Activity.get(chat_id=42).ext_add, 1)
+
+            Activity.increment(42, Activity.REMEMBER)
+            self.assertEqual(Activity.get(chat_id=42).remember_count, 1)
+
+            Activity.increment(42, Activity.FORGOT)
+            self.assertEqual(Activity.get(chat_id=42).forgot_count, 1)
+
+    def test_get_user_data(self):
+        with test_database(test_db, (Activity,)):
+            self.assertEqual(Activity.get_user_data(13), [])
+            Activity.increment(13, Activity.REMEMBER)
+            self.assertEqual(len(Activity.get_user_data(13)), 1)
+
 
 if __name__ == '__main__':
     main()
