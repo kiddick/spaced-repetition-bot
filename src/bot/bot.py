@@ -215,12 +215,27 @@ def get_api_key(bot, update):
     update.message.reply_text(api_key)
 
 
-def add_handlers(dsp):
+def get_stats_creator(base_url):
+
+    def get_stats_url(bot, update):
+        url = base_url + str(update.message.chat_id)
+        update.message.reply_text(url)
+
+    return get_stats_url
+
+
+def add_handlers(dsp, config):
     dsp.add_handler(CallbackQueryHandler(callback_handler))
     dsp.add_handler(CommandHandler('help', help))
     dsp.add_handler(CommandHandler('apikey', get_api_key))
     dsp.add_handler(MessageHandler(Filters.text, handle_text))
     dsp.add_error_handler(error)
+
+    stats_url = config.get('stats_url')
+    if stats_url:
+        dsp.add_handler(CommandHandler('stats', get_stats_creator(stats_url)))
+
+
 
 
 if __name__ == '__main__':
@@ -228,7 +243,7 @@ if __name__ == '__main__':
 
     updater = Updater(config['bot_token'])
 
-    add_handlers(updater.dispatcher)
+    add_handlers(updater.dispatcher, config)
     updater.start_polling()
 
     Thread(target=task_watcher, args=(updater.bot,)).start()

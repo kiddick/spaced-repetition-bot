@@ -8,3 +8,6 @@ bot_token: '#@87yh287cb2y0uwqe-0'
 # pattern: [0-9]+[smhdw]
 # combined values are supported as well: 1w2d, 1h30m
 time_intervals: [5m, 10m, 2h, 1d, 2d5h]
+
+# URL to API method of statistics server
+# stats_url: 'http://localhost/stats/'
