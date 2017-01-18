@@ -38,9 +38,9 @@ class MessageTemplate(object):
     REGULAR_REPLY = 'As you wish'
     REMOVAL_CONFIRM = '{} was removed from reminder list'
     ERROR_MESSAGE = 'Some error with database occured'
-    TERM_HAS_LEARNED = 'Awesome! Seems like you\'ve learned {}'
-    REMEMBER = 'Good job! You are still remember {}'
-    FORGOT = 'Notification counter for {} was reset'
+    TERM_HAS_LEARNED = 'Awesome! Seems like you\'ve learned {} 👍'
+    REMEMBER = '✅ Good job! You are still remember {} ✅'
+    FORGOT = '❌ Notification counter for {} was reset ❌'
     DUPLICATE_ACTIVE_TASK = (
         'You\'re already learning {}. '
         'I\'m resetting notification counter')
