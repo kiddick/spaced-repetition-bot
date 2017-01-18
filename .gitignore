@@ -2,4 +2,5 @@
 *.db
 .venv
 config.yaml
-
+*.css.map*
+*.sass-cache*
