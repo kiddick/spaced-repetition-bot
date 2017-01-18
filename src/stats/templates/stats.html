@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="/static/styles.css?q={{q}}">
+</head>
+<body>
+<div class="container">
+<div id="layout" class="row">
+  <div class="col-md-1"></div>
+  <div id="container" class="col-md-10">
+    <div class="row">
+      <div class="header">
+        <h1>Statistics</h1>
+      </div>
+      <hr/>
+    </div>
+    <div class="row words-list">
+      <table class="table-scalable">
+        <tr>
+          <th>Term</th>
+          <th>Forgot times</th>
+          <th>Started</th>
+          <th>Next notification</th>
+          <th>Status</th>
+        </tr>
+        {% for task in tasks %}
+          <tr>
+            <td data-th="Term">{{task.content}}</td>
+            <td data-th="Forgot times">{{task.forgot_counter}}</td>
+            <td data-th="Started">{{task.start_date|strftime}}</td>
+            <td data-th="Next notification">{{task.notification_date|strftime}}</td>
+            <td data-th="Status">
+              <span class="status-active">
+                {% if task.status == 'waiting' %}
+                  waiting for answer
+                {% else %}
+                  {{task.status}}
+                {% endif %}
+              </span>
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+  <div class="col-md-1"></div>
+</div>
+</div>
+</body>
+</html>
