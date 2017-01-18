@@ -440,6 +440,11 @@ class TestActivity(TestCase):
         Activity.increment(13, Activity.REMEMBER)
         self.assertEqual(len(Activity.get_user_data(13)), 1)
 
+    def test_get_public_list(self):
+        self.assertEqual(Activity.get_public_list(555), [])
+        Activity.increment(555, Activity.ADD_BOT)
+        self.assertEqual(len(Activity.get_public_list(555)), 1)
+
 
 @with_test_db(Task, Activity)
 class TestActivityWithBot(BotTestCase):

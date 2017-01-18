@@ -228,6 +228,24 @@ class Activity(BaseModel):
     def get_user_data(cls, chat_id):
         return list(Activity.select().where(Activity.chat_id == chat_id))
 
+    def to_public_dict(self):
+        return {
+            'date': self.date,
+            'add': {
+                'bot': self.bot_add,
+                'ext': self.ext_add,
+            },
+            'forgot': self.forgot_count,
+            'remember': self.remember_count
+        }
+
+    @classmethod
+    def get_public_list(cls, chat_id):
+        records = Activity.select().where(Activity.chat_id == int(chat_id))
+        if records:
+            return [record.to_public_dict() for record in records]
+        return []
+
 
 def create_tables():
     with db.transaction():
