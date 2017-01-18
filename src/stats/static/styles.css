@@ -9,6 +9,9 @@ hr {
   width: 100%;
   margin: 0 auto;
   text-align: center; }
+  .header h1 {
+    display: inline;
+    vertical-align: middle; }
 
 .table-scalable {
   margin: 1em 0;

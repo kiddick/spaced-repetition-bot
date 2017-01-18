@@ -15,7 +15,8 @@
   <div id="container" class="col-md-10">
     <div class="row">
       <div class="header">
-        <h1>Statistics</h1>
+        <img src="https://vectr.com/fbjorn/eaGZqUPb61.png" height="55px" width="55px">
+        <h1>Spaced Repetition Bot Statistics</h1>
       </div>
       <hr/>
     </div>
@@ -35,13 +36,13 @@
             <td data-th="Started">{{task.start_date|strftime}}</td>
             <td data-th="Next notification">{{task.notification_date|strftime}}</td>
             <td data-th="Status">
-              <span class="status-active">
-                {% if task.status == 'waiting' %}
-                  waiting for answer
-                {% else %}
-                  {{task.status}}
-                {% endif %}
-              </span>
+              {% if task.status == 'waiting' %}
+                <span class="status-waiting">waiting for answer</span>
+              {% elif task.status == 'active' %}
+                <span class="status-active">active</span>
+              {% else %}
+                <span class="status-done">finished</span>
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
