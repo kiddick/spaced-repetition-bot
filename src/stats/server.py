@@ -14,7 +14,7 @@ def get_statistics(chat_id):
 
     if not tasks:
         return render_template('404.html')
-
+    tasks = sorted(tasks, key=lambda task: task.start_date, reverse=True)
     return render_template(
         'stats.html',
         tasks=list(tasks),
