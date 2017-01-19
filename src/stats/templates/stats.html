@@ -6,7 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title></title>
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" type="text/css" href="/static/styles.css?q={{q}}">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="/static/styles.css?q=$q$">
 </head>
 <body>
 <div class="container">
@@ -21,36 +23,48 @@
       <hr/>
     </div>
     <div class="row words-list">
-      <table class="table-scalable">
-        <tr>
-          <th>Term</th>
-          <th>Forgot times</th>
-          <th>Started</th>
-          <th>Next notification</th>
-          <th>Status</th>
-        </tr>
-        {% for task in tasks %}
-          <tr>
-            <td data-th="Term">{{task.content}}</td>
-            <td data-th="Forgot times">{{task.forgot_counter}}</td>
-            <td data-th="Started">{{task.start_date|strftime}}</td>
-            <td data-th="Next notification">{{task.notification_date|strftime}}</td>
-            <td data-th="Status">
-              {% if task.status == 'waiting' %}
-                <span class="status-waiting">waiting for answer</span>
-              {% elif task.status == 'active' %}
-                <span class="status-active">active</span>
-              {% else %}
-                <span class="status-done">finished</span>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </table>
+      <div id="statsgrid">
+          <div id="grid-search"><i class="material-icons">search</i><input name="query" v-model="searchQuery" class="form-control"></div>
+        <stats-grid
+          :data="gridData"
+          :columns="gridColumns"
+          :filter-key="searchQuery"
+          :titles="gridTitles">
+        </stats-grid>
+      </div>
     </div>
   </div>
   <div class="col-md-1"></div>
 </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
+<script src="/static/vue.js"></script>
+<script type="text/javascript">CHAT_ID=$chat_id$</script>
+<script type="text/x-template" id="grid-template">
+  <div>
+    <div id="sort_buttons">
+    <i class="material-icons">&#xE164;</i>
+      <button v-for="key in columns" @click="sortBy(key)">{{titles[key]}} </button>
+    </div>
+    <table class="table-scalable">
+      <tr>
+        <th v-for="key in columns" @click="sortBy(key)">{{titles[key]}}</th>
+      </tr>
+        <tr v-for="entry in filteredData">
+          <td v-for="key in columns" :data-th=titles[key]>
+            <span v-if="key=='status'">
+              <span v-if="entry[key]=='active'" class="status-active">{{entry[key]}}</span>
+              <span v-if="entry[key]=='done'" class="status-done">{{entry[key]}}</span>
+              <span v-if="entry[key]=='waiting'" class="status-waiting">{{entry[key]}}</span>
+            </span>
+            <span v-else-if="key=='sdate'">{{entry[key]|strftime}}</span>
+            <span v-else-if="key=='ndate'">{{entry[key]|strftime}}</span>
+            <span v-else>{{entry[key]}}</span>
+          </td>
+        </tr>
+    </table>
+  </div>
+</script>
+<script type="text/javascript" src="/static/app.js?q=$q$"></script>
 </body>
 </html>

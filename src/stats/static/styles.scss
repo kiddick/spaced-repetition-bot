@@ -77,7 +77,6 @@ $breakpoint-alpha: 480px;
   }
 }
 
-
 .table-scalable {
   background: #D4F9DC;
   border-radius: .4em;
@@ -116,4 +115,48 @@ $breakpoint-alpha: 480px;
 .status-done {
     @extend .status;
     background-color: grey;
+}
+
+#sort_buttons {
+  display: none;
+  @media (max-width: $breakpoint-alpha) {
+    display: block;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+    padding-bottom: 1em;
+  }
+  button {
+    margin-right: 0.5em;
+    margin-bottom: 0.2em;
+    background-color: #BEF2D8;
+    border-radius: 5em;
+    border: 2px solid #247C21;
+    font-weight: bold;
+    color: #247C21;
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+#grid-search {
+  width: 90%;
+  margin: auto;
+  @media (max-width: $breakpoint-alpha) {
+    width: 100%;
+    text-align: center;
+  }
+  input {
+    display: inline;
+    width: 30%;
+    height: 50%;
+    @media (max-width: $breakpoint-alpha) {
+      width: 60%
+    }
+  }
+  i {
+    vertical-align: middle;
+  }
+  margin-bottom: 0.5em;
 }

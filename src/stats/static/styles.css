@@ -75,4 +75,42 @@ hr {
 .status-done {
   background-color: grey; }
 
+#sort_buttons {
+  display: none; }
+  @media (max-width: 480px) {
+    #sort_buttons {
+      display: block;
+      width: 100%;
+      margin: 0 auto;
+      text-align: center;
+      padding-bottom: 1em; } }
+  #sort_buttons button {
+    margin-right: 0.5em;
+    margin-bottom: 0.2em;
+    background-color: #BEF2D8;
+    border-radius: 5em;
+    border: 2px solid #247C21;
+    font-weight: bold;
+    color: #247C21; }
+    #sort_buttons button:focus {
+      outline: none; }
+
+#grid-search {
+  width: 90%;
+  margin: auto;
+  margin-bottom: 0.5em; }
+  @media (max-width: 480px) {
+    #grid-search {
+      width: 100%;
+      text-align: center; } }
+  #grid-search input {
+    display: inline;
+    width: 30%;
+    height: 50%; }
+    @media (max-width: 480px) {
+      #grid-search input {
+        width: 60%; } }
+  #grid-search i {
+    vertical-align: middle; }
+
 /*# sourceMappingURL=styles.css.map */
