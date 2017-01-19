@@ -143,6 +143,24 @@ class Task(BaseModel):
             self.finish_date = get_current_timestamp()
             self.save()
 
+    def to_public_dict(self):
+        return {
+            'content': self.content,
+            'status': self.status,
+            'sdate': self.start_date,
+            'fdate': self.finish_date,
+            'ndate': self.notification_date,
+            'forgot_counter': self.forgot_counter
+        }
+
+    @classmethod
+    def get_public_list(cls, chat_id):
+        tasks = Task.get_users_tasks(chat_id)
+        if not tasks:
+            return []
+        else:
+            return [task.to_public_dict() for task in tasks]
+
 
 class User(BaseModel):
     chat_id = IntegerField(index=True, default=0)
