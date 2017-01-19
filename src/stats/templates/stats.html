@@ -58,7 +58,7 @@
               <span v-if="entry[key]=='waiting'" class="status-waiting">{{entry[key]}}</span>
             </span>
             <span v-else-if="key=='sdate'">{{entry[key]|strftime}}</span>
-            <span v-else-if="key=='ndate'">{{entry[key]|strftime}}</span>
+            <span v-else-if="key=='ndate'">{{entry[key]|timefromnow}}</span>
             <span v-else>{{entry[key]}}</span>
           </td>
         </tr>

@@ -41,7 +41,10 @@ Vue.component('stats-grid', {
   },
   filters: {
     strftime: function (timestamp) {
-      return moment(timestamp * 1000).format('hh:mm - MMM Do YYYY');
+      return moment(timestamp * 1000).calendar();
+    },
+    timefromnow: function (timestamp) {
+      return moment(timestamp * 1000).fromNow();
     }
   },
   methods: {
