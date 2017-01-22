@@ -3,7 +3,7 @@ from datetime import datetime
 
 from flask import Flask, render_template, jsonify
 
-from src.bot.models import Task
+from src.bot.models import Task, Activity
 
 
 class FlaskCustomTemplates(Flask):
@@ -39,6 +39,12 @@ def get_statistics(chat_id):
 def get_user_tasks(chat_id):
     tasks = Task.get_public_list(chat_id)
     return jsonify(tasks=tasks)
+
+
+@app.route("/api/get_activity/<int:chat_id>")
+def get_user_activity(chat_id):
+    stats = Activity.get_public_list(chat_id)
+    return jsonify(activity=stats)
 
 
 @app.template_filter('strftime')

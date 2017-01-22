@@ -22,6 +22,22 @@
       </div>
       <hr/>
     </div>
+    <div id="charts">
+      <div class="row">
+        <div class="newterm col-md-9 chart">
+          <canvas id="newTermsChart"></canvas>
+        </div>
+        <div class="addorigin col-md-3 chart">
+          <canvas id="addOriginsChart"></canvas>
+        </div>
+      </div>
+      <div class="row">
+        <div class="forgrem chart">
+          <canvas id="forgRemChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <hr/>
     <div class="row words-list">
       <div id="statsgrid">
           <div id="grid-search"><i class="material-icons">search</i><input name="query" v-model="searchQuery" class="form-control"></div>
@@ -38,6 +54,7 @@
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.js"></script>
 <script src="https://unpkg.com/vue@2.1.10/dist/vue.js"></script>
 <script type="text/javascript">CHAT_ID=$chat_id$</script>
 <script type="text/x-template" id="grid-template">
