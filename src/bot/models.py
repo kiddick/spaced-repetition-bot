@@ -3,8 +3,8 @@ import random
 from datetime import datetime, timezone, timedelta
 
 from peewee import *
-from src.bot.utils import load_config
-
+from src.bot.utils import load_config, encode_callback_data, \
+    decode_callback_data
 
 config = load_config()
 DATABASE_NAME = config['database_name']
@@ -143,6 +143,32 @@ class Task(BaseModel):
             self.finish_date = get_current_timestamp()
             self.save()
 
+    def to_public_dict(self):
+        return {
+            'content': self.content,
+            'status': self.status,
+            'sdate': self.start_date,
+            'fdate': self.finish_date,
+            'ndate': self.notification_date,
+            'forgot_counter': self.forgot_counter
+        }
+
+    @classmethod
+    def get_public_list(cls, chat_id):
+        tasks = Task.get_users_tasks(chat_id)
+        if not tasks:
+            return []
+        else:
+            return [task.to_public_dict() for task in tasks]
+
+    @classmethod
+    def from_callback(cls, callback_data):
+        task_id = decode_callback_data(callback_data)
+        try:
+            return Task.get(Task.id == int(task_id))
+        except DoesNotExist:
+            return None
+
 
 class User(BaseModel):
     chat_id = IntegerField(index=True, default=0)
@@ -228,10 +254,46 @@ class Activity(BaseModel):
     def get_user_data(cls, chat_id):
         return list(Activity.select().where(Activity.chat_id == chat_id))
 
+    def to_public_dict(self):
+        return {
+            'date': self.date,
+            'add': {
+                'bot': self.bot_add,
+                'ext': self.ext_add,
+            },
+            'forgot': self.forgot_count,
+            'remember': self.remember_count
+        }
+
+    @classmethod
+    def get_public_list(cls, chat_id):
+        records = Activity.select().where(Activity.chat_id == int(chat_id))
+        if records:
+            return [record.to_public_dict() for record in records]
+        return []
+
+
+class TelegramCallback(BaseModel):
+    """ Since Telegram restricts callback's max length
+        this model temporarily stores in DB user messages """
+
+    data = CharField(default='')
+
+    @classmethod
+    def pop_data(cls, callback_data):
+        try:
+            callback_id = decode_callback_data(callback_data)
+            rec = TelegramCallback.get(TelegramCallback.id == callback_id)
+            response = rec.data
+            rec.delete_instance()
+            return response
+        except DoesNotExist:
+            return None
+
 
 def create_tables():
     with db.transaction():
-        for model in [Task, User, Activity]:
+        for model in [Task, User, Activity, TelegramCallback]:
             if not model.table_exists():
                 db.create_table(model)
 

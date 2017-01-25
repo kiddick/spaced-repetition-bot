@@ -2,3 +2,5 @@ peewee==2.8.5
 python-telegram-bot==5.2.0
 requests==2.12.3
 PyYAML==3.12
+Flask==0.12
+
